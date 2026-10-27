@@ -277,5 +277,3 @@ Expected result:
 
 ## 📄 License
 MIT License. Created for production RAG applications.
-#   M u l t i _ p d f _ r a g _ s y s t e m  
- 

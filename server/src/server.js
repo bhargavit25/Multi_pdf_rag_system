@@ -11,6 +11,7 @@ import authRoutes from './routes/authRoutes.js';
 import documentRoutes from './routes/documentRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
+import { seedDatabase } from './utils/seed.js';
 
 const app = express();
 
@@ -61,7 +62,7 @@ app.use('*', (req, res) => {
 app.use(errorHandler);
 
 // Start server
-async function startServer() {
+export async function startServer() {
   try {
     // 1. Connect MongoDB
     await connectDB();
@@ -73,7 +74,12 @@ async function startServer() {
       logger.warn(`Vector store initialization warning: ${vecErr.message}`);
     }
 
-    // 3. Listen on Port
+    // 3. Auto-seed demo account & sample document if missing
+    seedDatabase().catch((seedErr) => {
+      logger.warn(`Auto-seed warning: ${seedErr.message}`);
+    });
+
+    // 4. Listen on Port
     const server = app.listen(config.port, () => {
       logger.info(`🚀 Multi-PDF RAG Server running on port ${config.port}`);
       logger.info(`📡 API Health: http://localhost:${config.port}/api/health`);
@@ -86,9 +92,15 @@ async function startServer() {
   }
 }
 
-// Only start when directly run
-if (process.env.NODE_ENV !== 'test') {
+// Only start when directly run as main entrypoint
+const isDirectRun = process.argv[1] && (
+  process.argv[1].endsWith('server.js') ||
+  process.argv[1].endsWith('server')
+);
+
+if (isDirectRun && process.env.NODE_ENV !== 'test') {
   startServer();
 }
 
+export { app };
 export default app;

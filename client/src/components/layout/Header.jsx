@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Database, Cpu, Sparkles, Upload } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Menu, Cpu, Upload } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import api from '../../services/api';
 
 export function Header({ setMobileOpen, onUploadClick }) {

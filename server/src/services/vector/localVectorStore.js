@@ -10,35 +10,40 @@ export class LocalVectorStore extends VectorStoreInterface {
     this.storagePath = options.storagePath || path.join(config.vectorDbDir, 'vectors.json');
     this.vectors = new Map(); // id -> { id, embedding, document, metadata }
     this.isLoaded = false;
+    this.lastLoadedMtime = 0;
   }
 
-  async initialize() {
+  async loadFromDisk() {
     try {
       await fs.mkdir(path.dirname(this.storagePath), { recursive: true });
-      try {
-        const data = await fs.readFile(this.storagePath, 'utf-8');
-        const parsed = JSON.parse(data);
+      const stats = await fs.stat(this.storagePath);
+      if (this.isLoaded && this.lastLoadedMtime && stats.mtimeMs <= this.lastLoadedMtime) {
+        return true;
+      }
+      const data = await fs.readFile(this.storagePath, 'utf-8');
+      const parsed = JSON.parse(data);
+      this.vectors.clear();
+      for (const item of parsed) {
+        this.vectors.set(item.id, item);
+      }
+      this.lastLoadedMtime = stats.mtimeMs;
+      this.isLoaded = true;
+      logger.info(`LocalVectorStore loaded ${this.vectors.size} vectors from ${this.storagePath}`);
+      return true;
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        await this.saveToFile();
+      } else {
+        logger.warn(`LocalVectorStore failed to read file: ${err.message}. Initializing empty store.`);
         this.vectors.clear();
-        for (const item of parsed) {
-          this.vectors.set(item.id, item);
-        }
-        logger.info(`LocalVectorStore loaded ${this.vectors.size} vectors from ${this.storagePath}`);
-      } catch (err) {
-        if (err.code === 'ENOENT') {
-          // File does not exist yet
-          await this.saveToFile();
-          logger.info(`LocalVectorStore initialized new storage at ${this.storagePath}`);
-        } else {
-          logger.warn(`LocalVectorStore failed to read file: ${err.message}. Initializing empty store.`);
-          this.vectors.clear();
-        }
       }
       this.isLoaded = true;
       return true;
-    } catch (error) {
-      logger.error(`LocalVectorStore initialize error: ${error.message}`);
-      throw error;
     }
+  }
+
+  async initialize() {
+    return await this.loadFromDisk();
   }
 
   async saveToFile() {
@@ -47,13 +52,15 @@ export class LocalVectorStore extends VectorStoreInterface {
       const tempPath = `${this.storagePath}.tmp`;
       await fs.writeFile(tempPath, JSON.stringify(array, null, 2), 'utf-8');
       await fs.rename(tempPath, this.storagePath);
+      const stats = await fs.stat(this.storagePath);
+      this.lastLoadedMtime = stats.mtimeMs;
     } catch (error) {
       logger.error(`LocalVectorStore saveToFile failed: ${error.message}`);
     }
   }
 
   async addDocuments({ ids, embeddings, documents, metadatas }) {
-    if (!this.isLoaded) await this.initialize();
+    await this.loadFromDisk();
 
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
@@ -94,7 +101,7 @@ export class LocalVectorStore extends VectorStoreInterface {
   }
 
   async similaritySearch({ queryEmbedding, queryText, topK = 5, filter = {} }) {
-    if (!this.isLoaded) await this.initialize();
+    await this.loadFromDisk();
 
     const candidates = [];
 
@@ -126,7 +133,7 @@ export class LocalVectorStore extends VectorStoreInterface {
   }
 
   async deleteDocumentVectors({ documentId, userId }) {
-    if (!this.isLoaded) await this.initialize();
+    await this.loadFromDisk();
 
     let removed = 0;
     for (const [id, item] of this.vectors.entries()) {
@@ -148,7 +155,7 @@ export class LocalVectorStore extends VectorStoreInterface {
   }
 
   async getStats(filter = {}) {
-    if (!this.isLoaded) await this.initialize();
+    await this.loadFromDisk();
 
     let count = 0;
     for (const item of this.vectors.values()) {

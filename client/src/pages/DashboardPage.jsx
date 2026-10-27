@@ -7,15 +7,13 @@ import {
   Upload,
   ArrowRight,
   Sparkles,
-  Clock,
   ChevronRight,
-  CheckCircle2,
 } from 'lucide-react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { StatCardSkeleton, TableRowSkeleton } from '../components/ui/Skeletons';
-import { formatBytes, formatDate, formatRelativeTime } from '../utils/formatters';
+import { formatBytes, formatRelativeTime } from '../utils/formatters';
 import api from '../services/api';
 
 export function DashboardPage() {

@@ -2,15 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
   User as UserIcon,
   Cpu,
-  Key,
   Database,
-  Layers,
   Save,
-  CheckCircle2,
-  Sliders,
   Eye,
   EyeOff,
-  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';

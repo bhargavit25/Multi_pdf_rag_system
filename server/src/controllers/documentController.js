@@ -186,9 +186,16 @@ export const downloadOrViewFile = async (req, res, next) => {
       return sendError(res, 'Document not found or access denied.', 404);
     }
 
+    const resolvedPath = path.resolve(doc.filepath);
+    try {
+      await fs.access(resolvedPath);
+    } catch {
+      return sendError(res, 'PDF file not found on disk storage.', 404);
+    }
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(doc.filename)}"`);
-    return res.sendFile(path.resolve(doc.filepath));
+    return res.sendFile(resolvedPath);
   } catch (error) {
     next(error);
   }

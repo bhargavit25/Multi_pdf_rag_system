@@ -6,7 +6,6 @@ import {
   History,
   User as UserIcon,
   LogOut,
-  Sparkles,
   Plus,
   BookOpen,
 } from 'lucide-react';

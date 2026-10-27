@@ -4,19 +4,17 @@ import {
   MessageSquare,
   Search,
   Trash2,
-  Calendar,
   Clock,
   ArrowRight,
-  ExternalLink,
   Edit2,
   Check,
   Plus,
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { useToast } from '../context/ToastContext';
-import { formatDate, formatRelativeTime } from '../utils/formatters';
+import { formatRelativeTime } from '../utils/formatters';
 import api from '../services/api';
 
 export function HistoryPage() {
@@ -28,7 +26,6 @@ export function HistoryPage() {
   const [editTitle, setEditTitle] = useState('');
 
   const { showToast } = useToast();
-  const navigate = useNavigate();
 
   const fetchSessions = async () => {
     setLoading(true);

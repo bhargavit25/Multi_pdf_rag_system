@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, Layers, FileText, Calendar, HardDrive, Hash, MessageSquare, AlertTriangle } from 'lucide-react';
+import { ExternalLink, Layers, FileText, HardDrive, Hash, MessageSquare, AlertTriangle } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
-import { formatBytes, formatDate } from '../../utils/formatters';
+import { formatBytes } from '../../utils/formatters';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 
@@ -165,7 +165,7 @@ export function DocumentDetailsModal({ isOpen, onClose, documentId }) {
           {/* Action Footer */}
           <div className="flex items-center justify-between pt-4 border-t border-slate-800">
             <a
-              href={`/api/documents/${doc._id}/file`}
+              href={`/api/documents/${doc._id}/file${localStorage.getItem('token') ? `?token=${encodeURIComponent(localStorage.getItem('token'))}` : ''}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-xs text-brand-400 hover:text-brand-300 font-medium hover:underline"

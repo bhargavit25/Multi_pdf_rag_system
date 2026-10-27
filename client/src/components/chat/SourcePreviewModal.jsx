@@ -1,10 +1,13 @@
 import React from 'react';
-import { FileText, ExternalLink, Hash, Bookmark } from 'lucide-react';
+import { FileText, ExternalLink } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 
 export function SourcePreviewModal({ isOpen, onClose, source }) {
   if (!isOpen || !source) return null;
+
+  const token = localStorage.getItem('token') || '';
+  const fileUrl = `/api/documents/${source.documentId}/file${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 
   return (
     <Modal
@@ -51,7 +54,7 @@ export function SourcePreviewModal({ isOpen, onClose, source }) {
         {/* Footer actions */}
         <div className="flex items-center justify-between pt-3 border-t border-slate-800">
           <a
-            href={`/api/documents/${source.documentId}/file`}
+            href={fileUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-xs text-brand-400 hover:text-brand-300 font-medium hover:underline"

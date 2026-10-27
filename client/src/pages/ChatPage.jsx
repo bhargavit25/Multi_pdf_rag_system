@@ -6,11 +6,8 @@ import {
   Trash2,
   Edit2,
   Check,
-  X,
   Bot,
   Sparkles,
-  Layers,
-  FileText,
   Loader2,
   AlertCircle,
 } from 'lucide-react';
@@ -114,7 +111,7 @@ export function ChatPage() {
     };
 
     fetchSessionDetails();
-  }, [activeSessionId]);
+  }, [activeSessionId, showToast]);
 
   // Scroll to bottom on new message
   useEffect(() => {
@@ -153,7 +150,7 @@ export function ChatPage() {
 
       const res = await api.post('/chat', payload);
       if (res.data.success) {
-        const { chatId, answer, sources, title } = res.data.data;
+        const { chatId, answer, sources } = res.data.data;
 
         const assistantMsg = {
           role: 'assistant',
@@ -220,7 +217,7 @@ export function ChatPage() {
           return [...list, newAssistantMsg];
         });
       }
-    } catch (err) {
+    } catch {
       showToast('Failed to regenerate response', 'error');
     } finally {
       setLoading(false);

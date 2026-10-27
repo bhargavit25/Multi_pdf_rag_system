@@ -3,10 +3,32 @@ import assert from 'node:assert/strict';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import fs from 'fs/promises';
 import path from 'path';
+import mongoose from 'mongoose';
+import { startServer } from '../src/server.js';
 
 const API_BASE = 'http://localhost:5000/api';
 
 test('Multi-PDF RAG System - End-to-End Test Suite', async (t) => {
+  let serverInstance = null;
+
+  // Verify if server is already running, otherwise launch it
+  try {
+    const healthCheck = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(1000) });
+    if (!healthCheck.ok) throw new Error('Server not ready');
+  } catch {
+    serverInstance = await startServer();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  t.after(async () => {
+    if (serverInstance) {
+      if (typeof serverInstance.close === 'function') {
+        await new Promise((resolve) => serverInstance.close(resolve));
+      }
+      await mongoose.disconnect().catch(() => {});
+    }
+  });
+
   const testUser = {
     name: 'Dr. Alan Turing',
     email: `turing_${Date.now()}@example.com`,

@@ -15,6 +15,13 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('token') || '');
   const [loading, setLoading] = useState(true);
 
+  const logout = () => {
+    setToken('');
+    setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  };
+
   // Check current session validity on initial mount
   useEffect(() => {
     const checkAuth = async () => {
@@ -26,7 +33,7 @@ export function AuthProvider({ children }) {
             setUser(res.data.data.user);
             localStorage.setItem('user', JSON.stringify(res.data.data.user));
           }
-        } catch (error) {
+        } catch {
           // Token invalid or expired
           logout();
         }
@@ -74,13 +81,6 @@ export function AuthProvider({ children }) {
       return { success: true };
     }
     return { success: false };
-  };
-
-  const logout = () => {
-    setToken('');
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
   };
 
   return (

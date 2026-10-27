@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, ExternalLink, ChevronRight } from 'lucide-react';
+import { FileText, ChevronRight } from 'lucide-react';
 import { SourcePreviewModal } from './SourcePreviewModal';
 
 export function SourceCitation({ sources = [] }) {

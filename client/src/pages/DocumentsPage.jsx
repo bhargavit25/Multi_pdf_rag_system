@@ -8,8 +8,6 @@ import {
   Layers,
   RefreshCw,
   AlertCircle,
-  Eye,
-  CheckCircle2,
 } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 import { Badge } from '../components/ui/Badge';
@@ -253,7 +251,7 @@ export function DocumentsPage() {
                         </button>
 
                         <a
-                          href={`/api/documents/${doc._id}/file`}
+                          href={`/api/documents/${doc._id}/file${localStorage.getItem('token') ? `?token=${encodeURIComponent(localStorage.getItem('token'))}` : ''}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           title="View PDF"

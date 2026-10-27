@@ -80,15 +80,15 @@ export function MessageItem({ message, onRegenerate, isLast = false, loading = f
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
-              p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-              ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2 space-y-1" {...props} />,
-              ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-2 space-y-1" {...props} />,
-              li: ({ node, ...props }) => <li className="text-slate-300" {...props} />,
-              strong: ({ node, ...props }) => <strong className="font-semibold text-white" {...props} />,
-              blockquote: ({ node, ...props }) => (
+              p: ({ _node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+              ul: ({ _node, ...props }) => <ul className="list-disc pl-4 mb-2 space-y-1" {...props} />,
+              ol: ({ _node, ...props }) => <ol className="list-decimal pl-4 mb-2 space-y-1" {...props} />,
+              li: ({ _node, ...props }) => <li className="text-slate-300" {...props} />,
+              strong: ({ _node, ...props }) => <strong className="font-semibold text-white" {...props} />,
+              blockquote: ({ _node, ...props }) => (
                 <blockquote className="border-l-2 border-brand-500 pl-3 italic text-slate-400 my-2" {...props} />
               ),
-              code: ({ node, inline, className, children, ...props }) => {
+              code: ({ _node, inline, _className, children, ...props }) => {
                 if (inline) {
                   return (
                     <code className="px-1.5 py-0.5 rounded-md bg-slate-800 text-brand-300 font-mono text-xs" {...props}>
