@@ -130,7 +130,7 @@ export const getDocuments = async (req, res, next) => {
     const query = { userId: req.user.id };
 
     if (status) {
-      query.status = status;
+      query.status = new RegExp(`^${status}$`, 'i');
     }
 
     if (search) {

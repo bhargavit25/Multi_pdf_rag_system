@@ -2,6 +2,7 @@ import { embeddingService } from '../embeddings/embeddingService.js';
 import { getVectorStore } from '../vector/index.js';
 import { llmService } from './llmService.js';
 import { buildContextString, buildPromptWithContext } from './promptTemplates.js';
+import { Document } from '../../models/Document.js';
 import { config } from '../../config/env.js';
 import { logger } from '../../utils/logger.js';
 
@@ -27,29 +28,50 @@ export async function executeRagPipeline({
 }) {
   logger.rag(`Processing RAG query for user ${userId}: "${question.slice(0, 80)}..."`);
 
+  // Step 0: Check if user has uploaded documents
+  const userDocCount = await Document.countDocuments({
+    userId,
+    status: 'Ready',
+  });
+
+  if (userDocCount === 0) {
+    logger.rag(`User ${userId} has 0 Ready documents in library`);
+    return {
+      answer: "You haven't uploaded any PDF documents yet (or they are still processing). Please upload a PDF document first using the 'Upload PDF' button to start asking questions.",
+      sources: [],
+      retrievedChunkCount: 0,
+    };
+  }
+
   // Step 1: Generate embedding for user question
   const queryEmbedding = await embeddingService.generateEmbedding(question, userPreferences);
 
   // Step 2: Query vector store for topK relevant chunks
   const vectorStore = await getVectorStore();
-  
+
+  const sanitizedDocIds = (Array.isArray(documentIds) ? documentIds : [])
+    .map((id) => String(id).trim())
+    .filter((id) => id && id !== 'undefined' && id !== 'null');
+
   const searchFilter = { userId: String(userId) };
-  if (documentIds && documentIds.length === 1) {
-    searchFilter.documentId = String(documentIds[0]);
+  if (sanitizedDocIds.length === 1) {
+    searchFilter.documentId = sanitizedDocIds[0];
   }
 
   const rawChunks = await vectorStore.similaritySearch({
     queryEmbedding,
     queryText: question,
-    topK: topK * (documentIds && documentIds.length > 1 ? 2 : 1), // Fetch slightly more if filtering across subset
+    topK: Math.max(1, topK * (sanitizedDocIds.length > 1 ? 2 : 1)),
     filter: searchFilter,
   });
 
   // If specific multiple documentIds were supplied, filter in-memory
-  let relevantChunks = rawChunks;
-  if (documentIds && documentIds.length > 1) {
-    const docIdSet = new Set(documentIds.map((id) => String(id)));
-    relevantChunks = rawChunks.filter((chunk) => docIdSet.has(String(chunk.metadata.documentId)));
+  let relevantChunks = Array.isArray(rawChunks) ? rawChunks : [];
+  if (sanitizedDocIds.length > 1) {
+    const docIdSet = new Set(sanitizedDocIds);
+    relevantChunks = relevantChunks.filter((chunk) =>
+      docIdSet.has(String(chunk.metadata?.documentId))
+    );
   }
 
   // Deduplicate and trim to topK
@@ -57,10 +79,10 @@ export async function executeRagPipeline({
 
   logger.rag(`Retrieved ${relevantChunks.length} relevant chunks for query`);
 
-  // Step 3: If no chunks retrieved at all, return immediate friendly message
+  // Step 3: If no chunks retrieved at all, return clear not-found message
   if (relevantChunks.length === 0) {
     return {
-      answer: "I couldn't find any relevant information in your uploaded documents. Please ensure you have uploaded documents and they have completed processing.",
+      answer: "I could not find information about this in your uploaded documents. Please try rephrasing your question or check that your documents contain relevant content.",
       sources: [],
       retrievedChunkCount: 0,
     };
@@ -78,27 +100,34 @@ export async function executeRagPipeline({
     userPreferences,
   });
 
-  // Step 6: Format source citations
+  // Step 6: Format source citations safely
   const seenSources = new Set();
   const sources = [];
 
   for (const chunk of relevantChunks) {
-    const sourceKey = `${chunk.metadata.documentId}_${chunk.metadata.pageNumber}_${chunk.metadata.chunkId}`;
+    const meta = chunk.metadata || {};
+    const docId = String(meta.documentId || 'unknown');
+    const pageNum = Number(meta.pageNumber) || 1;
+    const chkId = String(meta.chunkId || `chunk_${Date.now()}`);
+    const sourceKey = `${docId}_${pageNum}_${chkId}`;
+
     if (!seenSources.has(sourceKey)) {
       seenSources.add(sourceKey);
       sources.push({
-        documentId: chunk.metadata.documentId,
-        filename: chunk.metadata.filename,
-        pageNumber: Number(chunk.metadata.pageNumber),
-        chunkId: chunk.metadata.chunkId,
-        previewText: chunk.text.slice(0, 180) + (chunk.text.length > 180 ? '...' : ''),
-        score: chunk.score,
+        documentId: docId,
+        filename: String(meta.filename || 'Document.pdf'),
+        pageNumber: pageNum,
+        chunkId: chkId,
+        previewText: chunk.text
+          ? chunk.text.slice(0, 180) + (chunk.text.length > 180 ? '...' : '')
+          : '',
+        score: typeof chunk.score === 'number' ? chunk.score : 0,
       });
     }
   }
 
   return {
-    answer,
+    answer: answer || "I could not find information about this in your uploaded documents.",
     sources,
     retrievedChunkCount: relevantChunks.length,
   };

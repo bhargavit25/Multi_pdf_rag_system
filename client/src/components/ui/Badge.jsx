@@ -1,53 +1,92 @@
 import React from 'react';
 
-export function Badge({ status, label, className = '' }) {
-  const normalizedStatus = status || label || 'Ready';
+export function Badge({
+  status,
+  label,
+  variant,
+  children,
+  className = '',
+}) {
+  const textContent = children || label || status || 'Ready';
+  const textStr = typeof textContent === 'string' ? textContent.toLowerCase() : '';
 
-  const configs = {
-    Uploading: {
-      bg: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
-      dot: 'bg-blue-400 animate-ping',
-      text: 'Uploading',
+  // Status mapping
+  const statusConfigs = {
+    uploading: {
+      bg: 'bg-blue-50 border-blue-200 text-blue-700',
+      dot: 'bg-blue-500 animate-ping',
+      hasDot: true,
     },
-    Processing: {
-      bg: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
-      dot: 'bg-amber-400 animate-pulse',
-      text: 'Processing Text',
+    processing: {
+      bg: 'bg-amber-50 border-amber-200 text-amber-700',
+      dot: 'bg-amber-500 animate-pulse',
+      hasDot: true,
     },
-    Embedding: {
-      bg: 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400',
-      dot: 'bg-indigo-400 animate-pulse',
-      text: 'Embedding Vectors',
+    embedding: {
+      bg: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+      dot: 'bg-indigo-500 animate-pulse',
+      hasDot: true,
     },
-    Ready: {
-      bg: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
-      dot: 'bg-emerald-400',
-      text: 'Ready for RAG',
+    ready: {
+      bg: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+      dot: 'bg-emerald-500',
+      hasDot: true,
     },
-    Failed: {
-      bg: 'bg-rose-500/10 border-rose-500/30 text-rose-400',
-      dot: 'bg-rose-400',
-      text: 'Failed',
+    failed: {
+      bg: 'bg-rose-50 border-rose-200 text-rose-700',
+      dot: 'bg-rose-500',
+      hasDot: true,
     },
   };
 
-  const current = configs[normalizedStatus] || configs.Ready;
+  // Variant mapping
+  const variantConfigs = {
+    success: {
+      bg: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+      dot: 'bg-emerald-500',
+      hasDot: true,
+    },
+    warning: {
+      bg: 'bg-amber-50 border-amber-200 text-amber-700',
+      dot: 'bg-amber-500',
+      hasDot: true,
+    },
+    danger: {
+      bg: 'bg-rose-50 border-rose-200 text-rose-700',
+      dot: 'bg-rose-500',
+      hasDot: true,
+    },
+    neutral: {
+      bg: 'bg-slate-100 border-slate-200 text-slate-700',
+      dot: 'bg-slate-400',
+      hasDot: false,
+    },
+    info: {
+      bg: 'bg-blue-50 border-blue-200 text-blue-700',
+      dot: 'bg-blue-500',
+      hasDot: false,
+    },
+  };
+
+  let config = variantConfigs[variant] || statusConfigs[textStr] || statusConfigs.ready;
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${current.bg} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${config.bg} ${className}`}
     >
-      <span className="relative flex h-2 w-2">
-        {(normalizedStatus === 'Uploading' ||
-          normalizedStatus === 'Processing' ||
-          normalizedStatus === 'Embedding') && (
-          <span
-            className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${current.dot}`}
-          />
-        )}
-        <span className={`relative inline-flex rounded-full h-2 w-2 ${current.dot.split(' ')[0]}`} />
-      </span>
-      <span>{label || current.text}</span>
+      {config.hasDot && (
+        <span className="relative flex h-2 w-2">
+          {config.dot.includes('animate') && (
+            <span
+              className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${config.dot}`}
+            />
+          )}
+          <span className={`relative inline-flex rounded-full h-2 w-2 ${config.dot.split(' ')[0]}`} />
+        </span>
+      )}
+      <span>{textContent}</span>
     </span>
   );
 }
+
+export default Badge;

@@ -6,19 +6,15 @@ import path from 'path';
 import mongoose from 'mongoose';
 import { startServer } from '../src/server.js';
 
-const API_BASE = 'http://localhost:5000/api';
+const TEST_PORT = 5099;
+const API_BASE = `http://localhost:${TEST_PORT}/api`;
 
 test('Multi-PDF RAG System - End-to-End Test Suite', async (t) => {
   let serverInstance = null;
 
-  // Verify if server is already running, otherwise launch it
-  try {
-    const healthCheck = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(1000) });
-    if (!healthCheck.ok) throw new Error('Server not ready');
-  } catch {
-    serverInstance = await startServer();
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
+  // Launch isolated test server on TEST_PORT
+  serverInstance = await startServer(TEST_PORT);
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
   t.after(async () => {
     if (serverInstance) {
@@ -201,7 +197,91 @@ test('Multi-PDF RAG System - End-to-End Test Suite', async (t) => {
     assert.equal(data.data.session.messages.length, 2); // 1 user + 1 assistant
   });
 
-  // 10. Dashboard Stats
+  let summaryId = '';
+  // 10. AI Summarization
+  await t.test('POST /api/summaries/generate should generate summary from PDF', async () => {
+    const res = await fetch(`${API_BASE}/summaries/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        documentIds: [uploadedDocId],
+        summaryType: 'short',
+      }),
+    });
+    const data = await res.json();
+    assert.equal(res.status, 201);
+    assert.equal(data.success, true);
+    assert.ok(data.data.summary.content);
+    assert.ok(data.data.summary.sources.length > 0);
+    summaryId = data.data.summary._id;
+  });
+
+  let quizId = '';
+  // 11. AI Quiz Generator
+  await t.test('POST /api/quizzes/generate should generate interactive quiz', async () => {
+    const res = await fetch(`${API_BASE}/quizzes/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        documentIds: [uploadedDocId],
+        difficulty: 'medium',
+        questionType: 'mcq',
+        questionCount: 4,
+      }),
+    });
+    const data = await res.json();
+    assert.equal(res.status, 201);
+    assert.equal(data.success, true);
+    assert.ok(data.data.quiz.questions.length >= 3);
+    quizId = data.data.quiz._id;
+  });
+
+  // 12. Submit Quiz
+  await t.test('POST /api/quizzes/:id/submit should grade quiz and compute score', async () => {
+    const res = await fetch(`${API_BASE}/quizzes/${quizId}/submit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        answers: [{ questionIndex: 0, selectedAnswer: 'Test Answer' }],
+      }),
+    });
+    const data = await res.json();
+    assert.equal(res.status, 200);
+    assert.equal(data.data.quiz.status, 'completed');
+    assert.ok(data.data.quiz.percentage !== undefined);
+  });
+
+  let flashcardSetId = '';
+  // 13. AI Flashcard Generator
+  await t.test('POST /api/flashcards/generate should generate flashcards', async () => {
+    const res = await fetch(`${API_BASE}/flashcards/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        documentIds: [uploadedDocId],
+        count: 5,
+      }),
+    });
+    const data = await res.json();
+    assert.equal(res.status, 201);
+    assert.equal(data.success, true);
+    assert.ok(data.data.flashcardSet.cards.length >= 3);
+    flashcardSetId = data.data.flashcardSet._id;
+  });
+
+  // 14. Dashboard Stats
   await t.test('GET /api/stats should return aggregated dashboard statistics', async () => {
     const res = await fetch(`${API_BASE}/stats`, {
       headers: { Authorization: `Bearer ${authToken}` },
@@ -211,9 +291,11 @@ test('Multi-PDF RAG System - End-to-End Test Suite', async (t) => {
     assert.equal(data.data.totalDocuments, 1);
     assert.equal(data.data.totalPages, 2);
     assert.equal(data.data.totalChats, 1);
+    assert.equal(data.data.totalSummaries, 1);
+    assert.equal(data.data.totalQuizzes, 1);
   });
 
-  // 11. Delete document and clean up vectors
+  // 15. Delete document and clean up vectors
   await t.test('DELETE /api/documents/:id should delete document and vector records', async () => {
     const res = await fetch(`${API_BASE}/documents/${uploadedDocId}`, {
       method: 'DELETE',

@@ -6,6 +6,8 @@ import {
   Save,
   Eye,
   EyeOff,
+  Settings,
+  CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -36,11 +38,11 @@ export function ProfilePage() {
     const fetchHealth = async () => {
       try {
         const res = await api.get('/health');
-        if (res.data.success) {
+        if (res.data?.success) {
           setHealth(res.data.data);
         }
-      } catch {
-        // silent
+      } catch (err) {
+        console.error('Failed to fetch health info:', err);
       }
     };
     fetchHealth();
@@ -56,63 +58,66 @@ export function ProfilePage() {
         llmModel: model,
       });
 
-      if (res.success) {
-        showToast('AI preferences saved successfully!', 'success');
+      if (res?.success) {
+        showToast('success', 'AI settings updated successfully!');
       } else {
-        showToast('Failed to save settings', 'error');
+        showToast('error', 'Failed to save settings');
       }
-    } catch {
-      showToast('An error occurred while saving', 'error');
+    } catch (err) {
+      showToast('error', 'An error occurred while saving');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="space-y-8 animate-fade-in max-w-4xl mx-auto">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-          Profile & AI Model Settings
-        </h2>
-        <p className="text-xs sm:text-sm text-slate-400">
-          Configure your LLM provider, manage personal API keys, and review vector infrastructure.
+    <div className="space-y-8 max-w-4xl mx-auto">
+      <div className="border-b border-slate-200 pb-5">
+        <div className="flex items-center gap-2">
+          <span className="p-2 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
+            <Settings className="h-5 w-5" />
+          </span>
+          <h1 className="text-2xl font-bold text-slate-900">Settings & AI Configuration</h1>
+        </div>
+        <p className="text-sm text-slate-500 mt-1">
+          Configure your LLM model preferences, manage optional personal API keys, and review vector infrastructure.
         </p>
       </div>
 
       {/* Account Info Card */}
-      <div className="glass-panel rounded-3xl p-6 border border-slate-800">
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-          <UserIcon className="w-4 h-4 text-brand-400" />
+      <div className="card p-6 border border-slate-200 bg-white shadow-xs">
+        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <UserIcon className="w-4 h-4 text-brand-600" />
           <span>User Profile</span>
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-          <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/80">
-            <span className="text-xs text-slate-400 block mb-1">Full Name</span>
-            <span className="font-semibold text-white">{user?.name || 'User'}</span>
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span className="text-xs text-slate-500 block mb-1">Full Name</span>
+            <span className="font-semibold text-slate-800">{user?.name || 'User'}</span>
           </div>
-          <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/80">
-            <span className="text-xs text-slate-400 block mb-1">Email Address</span>
-            <span className="font-semibold text-white truncate block">{user?.email}</span>
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span className="text-xs text-slate-500 block mb-1">Email Address</span>
+            <span className="font-semibold text-slate-800 truncate block">{user?.email}</span>
           </div>
-          <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/80">
-            <span className="text-xs text-slate-400 block mb-1">Member Since</span>
-            <span className="font-semibold text-slate-300">{formatDate(user?.createdAt)}</span>
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span className="text-xs text-slate-500 block mb-1">Account Created</span>
+            <span className="font-semibold text-slate-700">{formatDate(user?.createdAt)}</span>
           </div>
         </div>
       </div>
 
       {/* LLM & AI Provider Configuration Form */}
-      <div className="glass-panel rounded-3xl p-6 border border-slate-800">
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-          <Cpu className="w-4 h-4 text-indigo-400" />
-          <span>LLM Provider & RAG Configuration</span>
+      <div className="card p-6 border border-slate-200 bg-white shadow-xs">
+        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <Cpu className="w-4 h-4 text-indigo-600" />
+          <span>LLM Provider & Generation Options</span>
         </h3>
 
         <form onSubmit={handleSave} className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
                 LLM Provider
               </label>
               <select
@@ -122,7 +127,7 @@ export function ProfilePage() {
                   if (e.target.value === 'gemini') setModel('gemini-1.5-flash');
                   if (e.target.value === 'openai') setModel('gpt-4o-mini');
                 }}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-hidden focus:border-brand-500 focus:bg-white"
               >
                 <option value="gemini">Google Gemini (Recommended)</option>
                 <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
@@ -131,7 +136,7 @@ export function ProfilePage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
                 Model Name
               </label>
               <input
@@ -139,14 +144,14 @@ export function ProfilePage() {
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
                 placeholder={provider === 'openai' ? 'gpt-4o-mini' : 'gemini-1.5-flash'}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-hidden focus:border-brand-500 focus:bg-white"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-              API Key (Optional personal key override)
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+              API Key (Optional personal override)
             </label>
             <div className="relative">
               <input
@@ -154,18 +159,18 @@ export function ProfilePage() {
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="Paste your Gemini or OpenAI API key here..."
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-3.5 pr-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-10 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-brand-500 focus:bg-white font-mono"
               />
               <button
                 type="button"
                 onClick={() => setShowKey(!showKey)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-xs text-slate-400 mt-1.5">
-              If left blank, the server's environment variable key will be used, or the system will automatically synthesize answers via the built-in RAG fallback.
+            <p className="text-xs text-slate-500 mt-1.5">
+              If left blank, the server-configured environment variable key will be used, or the system will automatically synthesize answers via the built-in intelligent fallback.
             </p>
           </div>
 
@@ -173,41 +178,43 @@ export function ProfilePage() {
             <Button
               type="submit"
               variant="primary"
-              icon={Save}
+              icon={<Save className="w-4 h-4" />}
               loading={saving}
             >
-              Save AI Settings
+              Save Settings
             </Button>
           </div>
         </form>
       </div>
 
       {/* System Infrastructure Details */}
-      <div className="glass-panel rounded-3xl p-6 border border-slate-800 space-y-4">
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-          <Database className="w-4 h-4 text-emerald-400" />
-          <span>RAG Infrastructure Status</span>
+      <div className="card p-6 border border-slate-200 bg-white shadow-xs space-y-4">
+        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+          <Database className="w-4 h-4 text-emerald-600" />
+          <span>Vector & Retrieval Infrastructure</span>
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-400 block mb-1">Vector Store Engine</span>
-            <span className="font-semibold text-white">
-              {health?.vectorStore?.info?.provider || 'ChromaDB / Local'}
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span className="text-slate-500 block mb-1">Vector Store Engine</span>
+            <span className="font-semibold text-slate-800">
+              {health?.vectorStore?.activeProvider || health?.vectorStore?.info?.provider || 'ChromaDB / Local'}
             </span>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-400 block mb-1">Chunk Parameters</span>
-            <span className="font-semibold text-white">1000 chars / 150 overlap</span>
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span className="text-slate-500 block mb-1">Chunk Configuration</span>
+            <span className="font-semibold text-slate-800">1000 chars / 150 overlap</span>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-400 block mb-1">Retrieval Top-K</span>
-            <span className="font-semibold text-white">5 chunks per query</span>
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span className="text-slate-500 block mb-1">Top-K Retrieval</span>
+            <span className="font-semibold text-slate-800">5 chunks per query</span>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+export default ProfilePage;

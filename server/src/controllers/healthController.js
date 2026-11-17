@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 import { Document } from '../models/Document.js';
 import { ChatSession } from '../models/ChatSession.js';
+import { Summary } from '../models/Summary.js';
+import { Quiz } from '../models/Quiz.js';
+import { FlashcardSet } from '../models/FlashcardSet.js';
 import { getVectorStore } from '../services/vector/index.js';
 import { sendSuccess } from '../utils/response.js';
 import { config } from '../config/env.js';
@@ -29,7 +32,10 @@ export const getHealth = async (req, res) => {
       status: dbStatus,
     },
     vectorStore: {
-      provider: config.vectorStoreProvider,
+      provider: vectorDbInfo?.provider || config.vectorStoreProvider,
+      configuredProvider: config.vectorStoreProvider,
+      activeProvider: vectorDbInfo?.provider || 'Unknown',
+      chromaAvailable: vectorDbInfo?.provider === 'ChromaDB',
       status: vectorDbStatus,
       info: vectorDbInfo,
     },
@@ -46,15 +52,33 @@ export const getUserStats = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    const [totalDocuments, readyDocuments, totalChats, documents, recentChats] = await Promise.all([
+    const [
+      totalDocuments,
+      readyDocuments,
+      totalChats,
+      totalSummaries,
+      totalQuizzes,
+      totalFlashcardSets,
+      documents,
+      recentChats,
+      recentSummaries,
+      recentQuizzes,
+      recentFlashcards,
+    ] = await Promise.all([
       Document.countDocuments({ userId }),
       Document.countDocuments({ userId, status: 'Ready' }),
       ChatSession.countDocuments({ userId }),
+      Summary.countDocuments({ userId }),
+      Quiz.countDocuments({ userId }),
+      FlashcardSet.countDocuments({ userId }),
       Document.find({ userId }).sort({ createdAt: -1 }).limit(5).select('-chunks'),
       ChatSession.find({ userId }).sort({ updatedAt: -1 }).limit(5).select('title updatedAt messages createdAt'),
+      Summary.find({ userId }).sort({ createdAt: -1 }).limit(5).select('title summaryType documentNames createdAt'),
+      Quiz.find({ userId }).sort({ createdAt: -1 }).limit(5).select('title difficulty score percentage status createdAt'),
+      FlashcardSet.find({ userId }).sort({ createdAt: -1 }).limit(5).select('title totalCards knownCount needPracticeCount createdAt'),
     ]);
 
-    // Aggregate total pages and chunks
+    // Aggregate total pages, chunks, and storage size
     const aggregation = await Document.aggregate([
       { $match: { userId: new mongoose.Types.ObjectId(userId) } },
       {
@@ -75,10 +99,28 @@ export const getUserStats = async (req, res, next) => {
       totalMessages += (c.messages || []).length;
     });
 
+    // Compute total individual flashcards
+    const flashcardAggregation = await FlashcardSet.aggregate([
+      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+      {
+        $group: {
+          _id: null,
+          totalCards: { $sum: '$totalCards' },
+          knownCards: { $sum: '$knownCount' },
+          practiceCards: { $sum: '$needPracticeCount' },
+        },
+      },
+    ]);
+    const flashcardTotals = flashcardAggregation[0] || { totalCards: 0, knownCards: 0, practiceCards: 0 };
+
     return sendSuccess(res, {
       totalDocuments,
       readyDocuments,
       totalChats,
+      totalSummaries,
+      totalQuizzes,
+      totalFlashcards: flashcardTotals.totalCards,
+      totalFlashcardSets,
       totalPages: statsTotals.totalPages,
       totalChunks: statsTotals.totalChunks,
       totalSizeBytes: statsTotals.totalSizeBytes,
@@ -90,6 +132,38 @@ export const getUserStats = async (req, res, next) => {
         messageCount: c.messages ? c.messages.length : 0,
         updatedAt: c.updatedAt,
       })),
+      recentActivity: {
+        chats: recentChats.map((c) => ({
+          id: c._id,
+          title: c.title,
+          messageCount: c.messages ? c.messages.length : 0,
+          updatedAt: c.updatedAt,
+        })),
+        summaries: recentSummaries.map((s) => ({
+          id: s._id,
+          title: s.title,
+          type: s.summaryType,
+          documents: s.documentNames,
+          createdAt: s.createdAt,
+        })),
+        quizzes: recentQuizzes.map((q) => ({
+          id: q._id,
+          title: q.title,
+          difficulty: q.difficulty,
+          score: q.score,
+          percentage: q.percentage,
+          status: q.status,
+          createdAt: q.createdAt,
+        })),
+        flashcards: recentFlashcards.map((f) => ({
+          id: f._id,
+          title: f.title,
+          totalCards: f.totalCards,
+          knownCount: f.knownCount,
+          needPracticeCount: f.needPracticeCount,
+          createdAt: f.createdAt,
+        })),
+      },
     });
   } catch (error) {
     next(error);

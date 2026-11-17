@@ -18,7 +18,7 @@ export class ChromaVectorStore extends VectorStoreInterface {
       this.client = new ChromaClient({ path: this.url });
       // Test heartbeat / connection
       await this.client.heartbeat();
-      
+
       this.collection = await this.client.getOrCreateCollection({
         name: this.collectionName,
         metadata: { 'hnsw:space': 'cosine' },
@@ -42,11 +42,11 @@ export class ChromaVectorStore extends VectorStoreInterface {
     try {
       // Chroma requires metadata values to be string, number, or boolean
       const cleanMetadatas = metadatas.map((m) => ({
-        documentId: String(m.documentId),
-        userId: String(m.userId),
-        filename: String(m.filename),
-        pageNumber: Number(m.pageNumber),
-        chunkId: String(m.chunkId),
+        documentId: String(m.documentId || 'unknown'),
+        userId: String(m.userId || 'unknown'),
+        filename: String(m.filename || 'Document.pdf'),
+        pageNumber: Number(m.pageNumber) || 1,
+        chunkId: String(m.chunkId || 'chunk_0'),
       }));
 
       await this.collection.upsert({
@@ -70,29 +70,31 @@ export class ChromaVectorStore extends VectorStoreInterface {
     }
 
     try {
-      const where = {};
+      const conditions = [];
       if (filter.userId) {
-        where.userId = String(filter.userId);
+        conditions.push({ userId: String(filter.userId) });
       }
       if (filter.documentId) {
-        where.documentId = String(filter.documentId);
+        conditions.push({ documentId: String(filter.documentId) });
       }
 
       const queryParams = {
         queryEmbeddings: [queryEmbedding],
-        nResults: topK,
+        nResults: Math.max(1, topK),
       };
 
-      if (Object.keys(where).length > 0) {
-        queryParams.where = where;
+      if (conditions.length === 1) {
+        queryParams.where = conditions[0];
+      } else if (conditions.length > 1) {
+        queryParams.where = { $and: conditions };
       }
 
       const response = await this.collection.query(queryParams);
 
       const results = [];
-      const ids = response.ids[0] || [];
-      const documents = response.documents[0] || [];
-      const metadatas = response.metadatas[0] || [];
+      const ids = response.ids?.[0] || [];
+      const documents = response.documents?.[0] || [];
+      const metadatas = response.metadatas?.[0] || [];
       const distances = response.distances ? response.distances[0] || [] : [];
 
       for (let i = 0; i < ids.length; i++) {
@@ -102,8 +104,8 @@ export class ChromaVectorStore extends VectorStoreInterface {
 
         results.push({
           id: ids[i],
-          text: documents[i],
-          metadata: metadatas[i],
+          text: documents[i] || '',
+          metadata: metadatas[i] || {},
           score: parseFloat(score.toFixed(4)),
         });
       }
@@ -121,10 +123,12 @@ export class ChromaVectorStore extends VectorStoreInterface {
     }
 
     try {
-      const where = { documentId: String(documentId) };
+      const conditions = [{ documentId: String(documentId) }];
       if (userId) {
-        where.userId = String(userId);
+        conditions.push({ userId: String(userId) });
       }
+
+      const where = conditions.length === 1 ? conditions[0] : { $and: conditions };
 
       await this.collection.delete({ where });
       logger.info(`ChromaVectorStore: Deleted vectors for document ${documentId}`);
@@ -139,7 +143,17 @@ export class ChromaVectorStore extends VectorStoreInterface {
     if (!this.collection) {
       await this.initialize();
     }
-    const count = await this.collection.count();
-    return { count, provider: 'ChromaDB', url: this.url };
+
+    try {
+      const count = await this.collection.count();
+      return {
+        count,
+        collection: this.collectionName,
+        url: this.url,
+        provider: 'ChromaDB',
+      };
+    } catch (error) {
+      return { count: 0, provider: 'ChromaDB (Error)', error: error.message };
+    }
   }
 }

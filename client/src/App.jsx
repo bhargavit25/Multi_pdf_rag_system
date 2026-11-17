@@ -11,6 +11,9 @@ import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import { ChatPage } from './pages/ChatPage';
+import { SummarizationPage } from './pages/SummarizationPage';
+import { QuizPage } from './pages/QuizPage';
+import { FlashcardsPage } from './pages/FlashcardsPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { ProfilePage } from './pages/ProfilePage';
 
@@ -37,7 +40,13 @@ export default function App() {
               <Route path="/documents" element={<DocumentsPage />} />
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/chat/:id" element={<ChatPage />} />
+              <Route path="/summarize" element={<SummarizationPage />} />
+              <Route path="/summarization" element={<SummarizationPage />} />
+              <Route path="/quiz" element={<QuizPage />} />
+              <Route path="/quizzes" element={<QuizPage />} />
+              <Route path="/flashcards" element={<FlashcardsPage />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/settings" element={<ProfilePage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
 

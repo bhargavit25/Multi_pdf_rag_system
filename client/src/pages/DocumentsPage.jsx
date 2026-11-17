@@ -8,8 +8,13 @@ import {
   Layers,
   RefreshCw,
   AlertCircle,
+  MessageSquare,
+  Sparkles,
+  HelpCircle,
+  Clock,
+  Eye,
 } from 'lucide-react';
-import { useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -39,11 +44,11 @@ export function DocumentsPage() {
       if (statusFilter) params.status = statusFilter;
 
       const res = await api.get('/documents', { params });
-      if (res.data.success) {
-        setDocuments(res.data.data.documents);
+      if (res.data?.success) {
+        setDocuments(res.data.data.documents || []);
       }
-    } catch {
-      // silent
+    } catch (err) {
+      console.error('Failed to fetch documents:', err);
     } finally {
       if (!isSilent) setLoading(false);
     }
@@ -76,13 +81,13 @@ export function DocumentsPage() {
 
     try {
       const res = await api.delete(`/documents/${deleteDoc._id}`);
-      if (res.data.success) {
-        showToast(`Document "${deleteDoc.filename}" and its vector embeddings deleted.`, 'success');
+      if (res.data?.success) {
+        showToast('success', `Document "${deleteDoc.filename}" and vector embeddings deleted.`);
         setDocuments((prev) => prev.filter((d) => d._id !== deleteDoc._id));
         setDeleteDoc(null);
       }
     } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to delete document', 'error');
+      showToast('error', err.response?.data?.message || 'Failed to delete document');
     } finally {
       setDeleting(false);
     }
@@ -91,23 +96,26 @@ export function DocumentsPage() {
   const statusOptions = ['All', 'Ready', 'Processing', 'Embedding', 'Failed'];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Top Header & Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-            Document Management
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-400">
-            Manage your PDF library, inspect page-level chunks, and monitor indexing status.
+          <div className="flex items-center gap-2">
+            <span className="p-2 rounded-lg bg-blue-50 text-blue-600 border border-blue-100">
+              <FileText className="h-5 w-5" />
+            </span>
+            <h1 className="text-2xl font-bold text-slate-900">Document Management</h1>
+          </div>
+          <p className="text-sm text-slate-500 mt-1">
+            Manage your PDF knowledge library, inspect page-level vector chunks, and monitor extraction status.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
-            icon={RefreshCw}
+            icon={<RefreshCw className="w-4 h-4" />}
             onClick={() => fetchDocuments(false)}
             title="Refresh list"
           >
@@ -116,16 +124,16 @@ export function DocumentsPage() {
           <Button
             variant="primary"
             size="sm"
-            icon={Upload}
+            icon={<Upload className="w-4 h-4" />}
             onClick={openUploadModal}
           >
-            Upload PDFs
+            Upload PDF
           </Button>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="card p-4 border border-slate-200 bg-white flex flex-col md:flex-row items-center justify-between gap-3 shadow-xs">
         {/* Status Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
           {statusOptions.map((opt) => {
@@ -135,10 +143,10 @@ export function DocumentsPage() {
               <button
                 key={opt}
                 onClick={() => setStatusFilter(val)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   isSelected
-                    ? 'bg-brand-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    ? 'bg-brand-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
                 {opt}
@@ -149,32 +157,32 @@ export function DocumentsPage() {
 
         {/* Search input */}
         <div className="relative w-full md:w-72">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search by filename..."
+            placeholder="Search documents by name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors"
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-brand-500 focus:bg-white transition-colors"
           />
         </div>
       </div>
 
       {/* Documents Table */}
-      <div className="glass-panel rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
+      <div className="card border border-slate-200 bg-white overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-900/50 text-slate-400 uppercase text-[11px] tracking-wider">
-                <th className="py-3.5 px-4 font-semibold">Filename</th>
-                <th className="py-3.5 px-4 font-semibold">Upload Date</th>
-                <th className="py-3.5 px-4 font-semibold">File Size</th>
-                <th className="py-3.5 px-4 font-semibold">Pages</th>
-                <th className="py-3.5 px-4 font-semibold">Processing Status</th>
-                <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
+              <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-500 uppercase text-[11px] tracking-wider">
+                <th className="py-3 px-4 font-semibold">Document</th>
+                <th className="py-3 px-4 font-semibold">Upload Date</th>
+                <th className="py-3 px-4 font-semibold">Size</th>
+                <th className="py-3 px-4 font-semibold">Pages</th>
+                <th className="py-3 px-4 font-semibold">Status</th>
+                <th className="py-3 px-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <>
                   <TableRowSkeleton />
@@ -183,95 +191,143 @@ export function DocumentsPage() {
                 </>
               ) : documents.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-12 text-center text-slate-400">
-                    <FileText className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                    <p className="text-sm font-medium">No documents found</p>
-                    <p className="text-xs text-slate-500 mt-1">
+                  <td colSpan="6" className="py-12 text-center text-slate-500">
+                    <FileText className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                    <p className="text-sm font-medium text-slate-700">No documents found</p>
+                    <p className="text-xs text-slate-400 mt-1 mb-4">
                       {search || statusFilter
-                        ? 'Try clearing your filters'
-                        : 'Upload PDF documents to begin semantic search'}
+                        ? 'Try clearing your search filters'
+                        : 'Upload PDF files to start chatting, generating summaries, quizzes, and flashcards.'}
                     </p>
-                    <div className="mt-4">
-                      <Button variant="secondary" size="sm" onClick={openUploadModal}>
-                        Upload Document
-                      </Button>
-                    </div>
+                    <Button variant="primary" size="sm" onClick={openUploadModal}>
+                      Upload Your First PDF
+                    </Button>
                   </td>
                 </tr>
               ) : (
-                documents.map((doc) => (
-                  <tr key={doc._id} className="hover:bg-slate-800/30 transition-colors">
-                    {/* Filename */}
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 shrink-0">
-                          <FileText className="w-4 h-4" />
+                documents.map((doc) => {
+                  const isReady = doc.status?.toLowerCase() === 'ready';
+                  const docName = doc.filename || doc.name || 'Untitled PDF';
+
+                  return (
+                    <tr key={doc._id} className="hover:bg-slate-50/80 transition-colors">
+                      {/* Filename & Chunks */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-red-50 text-red-600 border border-red-100 shrink-0">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-800 truncate max-w-xs sm:max-w-md" title={docName}>
+                              {docName}
+                            </p>
+                            <p className="text-[11px] text-slate-400">
+                              {doc.chunkCount > 0 ? `${doc.chunkCount} vector chunks` : 'Processing...'}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="font-semibold text-white truncate max-w-xs sm:max-w-md">
-                            {doc.filename}
-                          </p>
-                          <p className="text-[11px] text-slate-400">
-                            {doc.chunkCount > 0 ? `${doc.chunkCount} vector chunks` : 'Processing...'}
-                          </p>
+                      </td>
+
+                      {/* Upload Date */}
+                      <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap">
+                        {formatDate(doc.createdAt)}
+                      </td>
+
+                      {/* File Size */}
+                      <td className="py-3.5 px-4 text-slate-600 whitespace-nowrap font-medium">
+                        {formatBytes(doc.fileSize)}
+                      </td>
+
+                      {/* Pages */}
+                      <td className="py-3.5 px-4 text-slate-600 font-medium">
+                        {doc.pageCount ? `${doc.pageCount} pgs` : '-'}
+                      </td>
+
+                      {/* Status Badge */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <Badge
+                          variant={
+                            isReady
+                              ? 'success'
+                              : doc.status?.toLowerCase() === 'processing' || doc.status?.toLowerCase() === 'embedding'
+                              ? 'warning'
+                              : 'danger'
+                          }
+                        >
+                          {doc.status}
+                        </Badge>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
+                          {isReady ? (
+                            <>
+                              <Link
+                                to={`/chat?doc=${doc._id}`}
+                                title="Chat with this PDF"
+                                className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                              >
+                                <MessageSquare className="w-4 h-4" />
+                              </Link>
+                              <Link
+                                to={`/summarize?doc=${doc._id}`}
+                                title="Summarize this PDF"
+                                className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                              >
+                                <Sparkles className="w-4 h-4" />
+                              </Link>
+                              <Link
+                                to={`/quiz?doc=${doc._id}`}
+                                title="Generate Quiz from this PDF"
+                                className="p-1.5 text-slate-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                              >
+                                <HelpCircle className="w-4 h-4" />
+                              </Link>
+                              <Link
+                                to={`/flashcards?doc=${doc._id}`}
+                                title="Create Flashcards from this PDF"
+                                className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                              >
+                                <Layers className="w-4 h-4" />
+                              </Link>
+                            </>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 mr-2 italic">Awaiting index</span>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => setSelectedDocId(doc._id)}
+                            title="Inspect Chunks and Metadata"
+                            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+
+                          <a
+                            href={`/api/documents/${doc._id}/file${localStorage.getItem('token') ? `?token=${encodeURIComponent(localStorage.getItem('token'))}` : ''}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="View PDF"
+                            className="p-1.5 text-slate-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+
+                          <button
+                            type="button"
+                            onClick={() => setDeleteDoc(doc)}
+                            title="Delete Document & Vectors"
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
-                      </div>
-                    </td>
-
-                    {/* Upload Date */}
-                    <td className="py-4 px-4 text-slate-400 whitespace-nowrap">
-                      {formatDate(doc.createdAt)}
-                    </td>
-
-                    {/* File Size */}
-                    <td className="py-4 px-4 text-slate-300 whitespace-nowrap">
-                      {formatBytes(doc.fileSize)}
-                    </td>
-
-                    {/* Pages */}
-                    <td className="py-4 px-4 text-slate-300 font-medium">
-                      {doc.pageCount ? `${doc.pageCount} pgs` : '-'}
-                    </td>
-
-                    {/* Status Badge */}
-                    <td className="py-4 px-4 whitespace-nowrap">
-                      <Badge status={doc.status} />
-                    </td>
-
-                    {/* Actions */}
-                    <td className="py-4 px-4 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedDocId(doc._id)}
-                          title="Inspect Chunks and Metadata"
-                          className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-                        >
-                          <Layers className="w-4 h-4" />
-                        </button>
-
-                        <a
-                          href={`/api/documents/${doc._id}/file${localStorage.getItem('token') ? `?token=${encodeURIComponent(localStorage.getItem('token'))}` : ''}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="View PDF"
-                          className="p-2 text-slate-400 hover:text-brand-300 hover:bg-slate-800 rounded-lg transition-colors"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-
-                        <button
-                          type="button"
-                          onClick={() => setDeleteDoc(doc)}
-                          title="Delete Document & Vectors"
-                          className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -293,16 +349,16 @@ export function DocumentsPage() {
         maxWidth="max-w-md"
       >
         <div className="space-y-4">
-          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
-            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs">
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
             <p>
-              This will permanently delete <strong>{deleteDoc?.filename}</strong>, along with its stored PDF file and all associated vectors from ChromaDB / the vector store.
+              This will permanently delete <strong>{deleteDoc?.filename}</strong>, along with its stored PDF file and all associated vectors from the vector database.
             </p>
           </div>
 
           <div className="flex justify-end gap-2.5 pt-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => setDeleteDoc(null)}
               disabled={deleting}
@@ -312,7 +368,7 @@ export function DocumentsPage() {
             <Button
               variant="danger"
               size="sm"
-              icon={Trash2}
+              icon={<Trash2 className="w-4 h-4" />}
               onClick={handleDelete}
               loading={deleting}
             >
@@ -324,3 +380,5 @@ export function DocumentsPage() {
     </div>
   );
 }
+
+export default DocumentsPage;

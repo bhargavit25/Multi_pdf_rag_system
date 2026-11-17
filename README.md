@@ -1,6 +1,6 @@
-# 📄 Multi-PDF RAG System
+# 📄 Multi-PDF RAG & AI Learning Platform
 
-A production-ready, full-stack **Retrieval-Augmented Generation (RAG)** platform designed to ingest, chunk, embed, and query multiple PDF documents simultaneously. The system preserves page-level tracking throughout the pipeline, enabling **exact page-number source citations** for every generated answer.
+A production-ready, full-stack **Retrieval-Augmented Generation (RAG)** and intelligent study platform designed to ingest, chunk, embed, query, and transform multiple PDF documents simultaneously. The system preserves page-level tracking throughout the entire pipeline, enabling **exact page-number source citations** for questions, summaries, quizzes, and flashcards.
 
 Built with a modular vector database architecture (defaulting to **ChromaDB** with built-in persistent fallback), **Node.js/Express**, **MongoDB**, **React 19**, **Tailwind CSS**, and modern AI LLM integration (**Google Gemini** & **OpenAI**).
 
@@ -23,11 +23,31 @@ Built with a modular vector database architecture (defaulting to **ChromaDB** wi
 - **Configurable LLM Dispatcher**: Seamlessly switch between Google Gemini (`gemini-1.5-flash`), OpenAI (`gpt-4o-mini`), Groq, or the built-in offline contextual synthesizer.
 - **Markdown & Code Rendering**: Full markdown formatting, lists, tables, and formatted code blocks with copy-to-clipboard functionality.
 
+### 🎓 AI-Powered Learning Features
+1. **AI PDF Summarization (`/summarize`)**:
+   - **Short Summary**: Quick executive overview with main ideas and core takeaways.
+   - **Detailed Summary**: In-depth explanation covering technical terms, methodologies, and examples.
+   - **Chapter-wise Summary**: Structured breakdown preserving document headings and page ranges.
+   - **Key Points**: High-yield bullet points, core definitions, and formulas.
+   - **Actions**: Copy to clipboard, download as TXT or printable PDF, save to history.
+2. **AI Quiz Generator (`/quiz`)**:
+   - **Question Types**: Multiple Choice (MCQ), True/False, Mixed.
+   - **Question Counts**: 5, 10, 15, or 20 questions.
+   - **Interactive Player**: Single-question view with timer, progress bar, instant feedback, and answer justifications citing source page numbers.
+   - **Score Analytics**: Percentage calculation, pass/fail status, answer review, and instant retake option.
+3. **AI Flashcards (`/flashcards`)**:
+   - **Interactive 3D Flip Card**: Click or press <kbd>Space</kbd> to flip between term and answer with source doc & page citations.
+   - **Study Tracking**: "Mark Known" vs. "Need Practice" status tagging.
+   - **Study Tools**: Shuffle cards, restart deck, filter by practice mode, and rename sets.
+4. **Centralized Learning History (`/history`)**:
+   - 4 searchable category tabs: AI Chats, Summaries, Quizzes, and Flashcard Sets.
+   - Real-time search across titles, document sources, and tags.
+
 ### 🛡️ Security & Enterprise Architecture
 - **JWT Authentication**: Secure user registration, login, and protected endpoints with bcrypt password hashing.
-- **Multi-Tenant Isolation**: Users can only query, view, and delete their own documents and chat sessions.
-- **Cascade Vector Deletion**: Deleting a document removes its MongoDB record, disk file, and all associated vectors from ChromaDB.
-- **Modular Vector Store Interface**: Easily swap between ChromaDB, Pinecone, or the built-in persistent local vector store.
+- **Multi-Tenant Isolation**: Users can only query, view, and delete their own documents, chats, summaries, quizzes, and flashcards.
+- **Cascade Vector Deletion**: Deleting a document removes its MongoDB record, disk file, and all associated vectors from ChromaDB / Local vector store.
+- **Modular Vector Store Interface**: Easily swap between ChromaDB and the built-in persistent local vector store.
 
 ---
 
@@ -44,26 +64,22 @@ flowchart TD
         D --> G[(MongoDB Metadata)]
     end
 
-    subgraph Query["2. RAG Retrieval & Synthesis Pipeline"]
-        H[User Asks Question] --> I[Question Embedding]
-        I --> J[Vector Similarity Search topK=5]
-        F -.->|Retrieve Chunks| J
-        J --> K[Context String & Prompt Assembly]
-        K --> L[LLM: Gemini / OpenAI]
-        L --> M[Synthesized Answer + Page Citations]
-        M --> N[Interactive Chat UI]
+    subgraph Learning["2. AI Learning Engine"]
+        G -.-> H[PDF Text Aggregator]
+        H --> I[AI Summarization Engine]
+        H --> J[AI Quiz Generation & Grading]
+        H --> K[AI Flashcard Generator]
+    end
+
+    subgraph Query["3. RAG Retrieval & Synthesis Pipeline"]
+        L[User Asks Question] --> M[Question Embedding]
+        M --> N[Vector Similarity Search topK=5]
+        F -.->|Retrieve Chunks| N
+        N --> O[Context String & Prompt Assembly]
+        O --> P[LLM: Gemini / OpenAI]
+        P --> Q[Synthesized Answer + Page Citations]
     end
 ```
-
-### Complete RAG Workflow Steps:
-1. **PDF Upload**: User uploads documents via drag-and-drop.
-2. **Text Extraction**: Text is extracted per page while strictly preserving the 1-indexed page number.
-3. **Chunking**: Text is split into overlapping chunks, each tagged with `documentId`, `userId`, `filename`, `pageNumber`, and `chunkId`.
-4. **Embedding**: Dense embeddings (e.g., Gemini `text-embedding-004` or OpenAI `text-embedding-3-small`) are generated once.
-5. **Vector Store**: Vectors and rich metadata are saved to ChromaDB.
-6. **Query Retrieval**: The user's query is converted to an embedding and compared against stored chunks.
-7. **Synthesis**: The top-$K$ chunks and conversation history are combined into the system prompt.
-8. **Citation Response**: The LLM answers strictly using context, returning citations with filename and page numbers.
 
 ---
 
@@ -91,38 +107,36 @@ multi-pdf-rag/
 │   │   │   ├── layout/         # AppLayout, Sidebar, Header, ProtectedRoute
 │   │   │   └── ui/             # Button, Badge, Modal, Skeletons
 │   │   ├── context/            # AuthContext, ToastContext
-│   │   ├── pages/              # Login, Register, Dashboard, Documents, Chat, History, Profile
+│   │   ├── pages/              # Dashboard, Documents, Chat, Summarization, Quiz, Flashcards, History, Profile
 │   │   ├── services/           # Axios API client with JWT interceptor
 │   │   ├── utils/              # Formatters (bytes, dates, relative time)
 │   │   ├── App.jsx             # React Router setup
-│   │   ├── main.jsx            # React root
-│   │   └── index.css           # Modern Tailwind theme & glassmorphism
+│   │   └── index.css           # Clean SaaS light theme & 3D card-flip animations
 │   ├── package.json
-│   ├── tailwind.config.js
 │   └── vite.config.js
 │
 ├── server/                     # Backend Application (Node.js + Express)
 │   ├── src/
 │   │   ├── config/             # Environment variables (env.js) and MongoDB connection (db.js)
-│   │   ├── controllers/        # authController, documentController, chatController, healthController
+│   │   ├── controllers/        # auth, document, chat, summary, quiz, flashcard, health controllers
 │   │   ├── middleware/         # auth (JWT), upload (Multer PDF filter), errorHandler
-│   │   ├── models/             # User, Document, ChatSession Mongoose models
-│   │   ├── routes/             # authRoutes, documentRoutes, chatRoutes, healthRoutes
+│   │   ├── models/             # User, Document, ChatSession, Summary, Quiz, FlashcardSet
+│   │   ├── routes/             # auth, document, chat, summary, quiz, flashcard, health routes
 │   │   ├── services/
 │   │   │   ├── pdf/            # extractor.js (page-preserving), chunker.js
 │   │   │   ├── embeddings/     # embeddingService, geminiProvider, openaiProvider, localProvider
 │   │   │   ├── vector/         # vectorStoreInterface, chromaVectorStore, localVectorStore
+│   │   │   ├── learning/       # learningService (summaries, quizzes, flashcards)
 │   │   │   └── rag/            # promptTemplates, llmService, ragPipeline
 │   │   ├── utils/              # logger, response helpers
-│   │   └── server.js           # Main Express server entrypoint
-│   ├── tests/                  # End-to-end automated test suite (api.test.js)
+│   │   └── server.js           # Express server entrypoint
+│   ├── tests/                  # Automated test suite (api.test.js)
 │   └── package.json
 │
 ├── uploads/                    # Local storage for uploaded PDF files
 ├── vector_db/                  # Persistent storage directory for vector index
 ├── .env.example                # Sample environment variables
-├── .gitignore
-├── package.json                # Root package for concurrently running client & server
+├── package.json                # Root package for running client & server
 └── README.md
 ```
 
@@ -171,22 +185,11 @@ TOP_K=5
 ## 🚀 Running Locally
 
 ### Prerequisites
-- **Node.js** >= 18 (Tested on Node.js v26)
+- **Node.js** >= 18
 - **MongoDB** running locally on port 27017 or a MongoDB Atlas connection string.
-- *(Optional)* **ChromaDB** running on port 8000 (if omitted, the system seamlessly uses the local vector store).
+- *(Optional)* **ChromaDB** running on port 8000 (`docker compose up -d`).
 
-### 1. Install Dependencies
-Run from the root directory:
-```bash
-npm run install:all
-```
-*(Or install in each directory individually)*:
-```bash
-cd server && npm install
-cd ../client && npm install
-```
-
-### 2. Run Backend & Frontend Concurrently
+### 1. Run Backend & Frontend Concurrently
 From the root directory:
 ```bash
 npm run dev
@@ -194,86 +197,66 @@ npm run dev
 
 Alternatively, run in separate terminals:
 ```bash
-# Terminal 1: Backend (Port 5000)
+# Terminal 1: Backend Server (Port 5000)
 cd server
 npm run dev
 
-# Terminal 2: Frontend (Port 5173)
+# Terminal 2: Frontend Client (Port 5173)
 cd client
 npm run dev
 ```
 
-### 3. Open in Browser
-Visit **[http://localhost:5173](http://localhost:5173)** to open the application.
-
----
-
-## 🧪 Automated Testing
-
-The backend includes a comprehensive automated test suite verifying all 12 key capabilities:
-- Health check & database connection
-- User registration & JWT generation
-- User login with bcrypt verification
-- Protected routes authentication
-- PDF upload & page-by-page extraction
-- Chunker & metadata validation
-- Vector indexing
-- RAG question answering with exact page citations
-- Chat history sessions
-- Dashboard statistics
-- Document deletion and vector cleanup
-
-To run the test suite:
+### 2. Run Automated Tests
 ```bash
-cd server
-npm test
+npm test --prefix server
 ```
-
-Expected result:
-```text
-✔ GET /api/health should return healthy status
-✔ POST /api/auth/register should register new user
-✔ POST /api/auth/login should authenticate user
-✔ GET /api/auth/me should return authenticated user profile
-✔ GET /api/documents should reject unauthenticated requests
-✔ POST /api/documents/upload should upload and parse PDF with page numbers
-✔ GET /api/documents/:id should show Ready status with page count 2
-✔ POST /api/chat should answer question and cite document and page number
-✔ GET /api/chats/:id should retrieve conversation history
-✔ GET /api/stats should return aggregated dashboard statistics
-✔ DELETE /api/documents/:id should delete document and vector records
-✔ Multi-PDF RAG System - End-to-End Test Suite (pass 12, fail 0)
-```
+Executes all 16 end-to-end integration tests verifying Auth, Documents, Chat RAG, Summaries, Quizzes, Flashcards, and Stats.
 
 ---
 
-## 📡 API Reference
+## 📡 API Endpoints
 
 ### Authentication
-- `POST /api/auth/register` - Create a new user account.
-- `POST /api/auth/login` - Authenticate and receive JWT.
-- `GET  /api/auth/me` - Get authenticated user profile.
-- `PUT  /api/auth/preferences` - Update personal LLM provider/key.
+- `POST /api/auth/register` - Create user account
+- `POST /api/auth/login` - Authenticate & obtain JWT
+- `GET /api/auth/me` - Current user profile
+- `PATCH /api/auth/preferences` - Update user LLM preferences & API keys
 
 ### Documents
-- `POST   /api/documents/upload` - Upload up to 10 PDFs (`multipart/form-data`).
-- `GET    /api/documents` - List all user documents with pagination and status filters.
-- `GET    /api/documents/:id` - Get document details and chunk metadata.
-- `GET    /api/documents/:id/file` - Stream/view the PDF document in browser.
-- `DELETE /api/documents/:id` - Delete document, disk file, and vector embeddings.
+- `GET /api/documents` - List uploaded documents
+- `POST /api/documents/upload` - Upload PDF files
+- `GET /api/documents/:id` - Document metadata and status
+- `GET /api/documents/:id/chunks` - Inspect chunks and page mappings
+- `GET /api/documents/:id/file` - Serve original PDF
+- `DELETE /api/documents/:id` - Delete document and vectors
 
-### RAG Chat
-- `POST   /api/chat` - Query documents via RAG (returns answer + sources).
-- `GET    /api/chats` - List user chat sessions.
-- `GET    /api/chats/:id` - Get messages and citations for a chat session.
-- `PATCH  /api/chats/:id` - Rename chat title.
-- `DELETE /api/chats/:id` - Delete chat session.
+### AI Chat & RAG
+- `POST /api/chat` - Query documents with semantic RAG
+- `GET /api/chats` - List chat sessions
+- `GET /api/chats/:id` - Chat conversation history
+- `PATCH /api/chats/:id` - Rename chat session
+- `DELETE /api/chats/:id` - Delete chat session
 
-### Health & Stats
-- `GET /api/health` - Check database, vector store, and LLM status.
-- `GET /api/stats` - Get aggregated dashboard metrics.
+### AI Summarization
+- `POST /api/summaries/generate` - Generate short, detailed, or chapter summary
+- `GET /api/summaries` - List saved summaries
+- `GET /api/summaries/:id` - Get summary details
+- `DELETE /api/summaries/:id` - Delete summary
 
----
+### AI Quizzes
+- `POST /api/quizzes/generate` - Generate interactive quiz (MCQ, True/False, Mixed)
+- `GET /api/quizzes` - List past quizzes
+- `GET /api/quizzes/:id` - Get quiz and questions
+- `POST /api/quizzes/:id/submit` - Grade quiz and calculate score
+- `DELETE /api/quizzes/:id` - Delete quiz
 
-## 📄 License
-MIT License. Created for production RAG applications.
+### AI Flashcards
+- `POST /api/flashcards/generate` - Generate flashcard deck
+- `GET /api/flashcards` - List flashcard sets
+- `GET /api/flashcards/:id` - Get flashcard set
+- `PATCH /api/flashcards/:id` - Update card statuses and set title
+- `DELETE /api/flashcards/:id` - Delete flashcard set
+
+### System & Metrics
+- `GET /api/health` - Health check & infrastructure status
+- `GET /api/stats` - User workspace metrics & recent activity

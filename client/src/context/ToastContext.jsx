@@ -28,26 +28,26 @@ export function ToastProvider({ children }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-xl backdrop-blur-md transition-all animate-slide-up ${
+            className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-xl bg-white transition-all animate-slide-up ${
               toast.type === 'success'
-                ? 'bg-emerald-950/85 border-emerald-500/30 text-emerald-100'
+                ? 'border-emerald-200 text-slate-800'
                 : toast.type === 'error'
-                ? 'bg-rose-950/85 border-rose-500/30 text-rose-100'
+                ? 'border-rose-200 text-slate-800'
                 : toast.type === 'warning'
-                ? 'bg-amber-950/85 border-amber-500/30 text-amber-100'
-                : 'bg-slate-900/90 border-slate-700/50 text-slate-100'
+                ? 'border-amber-200 text-slate-800'
+                : 'border-slate-200 text-slate-800'
             }`}
           >
             <div className="mt-0.5 shrink-0">
-              {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
-              {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-rose-400" />}
-              {toast.type === 'warning' && <AlertCircle className="w-5 h-5 text-amber-400" />}
-              {toast.type === 'info' && <Info className="w-5 h-5 text-brand-400" />}
+              {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+              {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-rose-500" />}
+              {toast.type === 'warning' && <AlertCircle className="w-5 h-5 text-amber-500" />}
+              {toast.type === 'info' && <Info className="w-5 h-5 text-brand-600" />}
             </div>
             <div className="flex-1 text-sm font-medium">{toast.message}</div>
             <button
               onClick={() => removeToast(toast.id)}
-              className="shrink-0 text-slate-400 hover:text-white transition-colors"
+              className="shrink-0 text-slate-400 hover:text-slate-700 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

@@ -36,6 +36,8 @@ export async function getVectorStore() {
       logger.warn(`ChromaDB is not reachable at ${config.chromaUrl} (${error.message}). Falling back to built-in LocalVectorStore.`);
       const local = new LocalVectorStore();
       await local.initialize();
+      logger.info(`[Vector Store] Active provider: LocalVectorStore (persisted in ${local.storagePath}).`);
+      logger.info(`[Vector Store] ChromaDB is optional. To enable ChromaDB, start ChromaDB (e.g. via 'docker compose up -d') at ${config.chromaUrl}.`);
       vectorStoreInstance = local;
       return vectorStoreInstance;
     }

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, FileText, Trash2 } from 'lucide-react';
+import { UploadCloud, FileText, Trash2, CheckCircle2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useToast } from '../../context/ToastContext';
@@ -129,8 +129,8 @@ export function FileUploadModal({ isOpen, onClose, onUploadSuccess }) {
           onClick={() => fileInputRef.current?.click()}
           className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
             isDragging
-              ? 'border-brand-500 bg-brand-500/10'
-              : 'border-slate-800 hover:border-slate-700 bg-slate-900/40 hover:bg-slate-900/70'
+              ? 'border-brand-500 bg-brand-50/60'
+              : 'border-slate-300 hover:border-brand-400 bg-slate-50/60 hover:bg-slate-50'
           }`}
         >
           <input
@@ -141,26 +141,26 @@ export function FileUploadModal({ isOpen, onClose, onUploadSuccess }) {
             className="hidden"
             onChange={handleFileChange}
           />
-          <div className="w-12 h-12 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-400 flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 rounded-2xl bg-brand-100 text-brand-600 flex items-center justify-center mx-auto mb-3 shadow-xs">
             <UploadCloud className="w-6 h-6" />
           </div>
-          <p className="text-sm font-semibold text-white mb-1">
+          <p className="text-sm font-bold text-slate-800 mb-1">
             Click to upload or drag and drop PDFs
           </p>
-          <p className="text-xs text-slate-400">
-            PDF files only up to 20MB each. Page numbers and embeddings preserved.
+          <p className="text-xs text-slate-500">
+            PDF files only up to 20MB each. Page preservation and vector indexing start automatically.
           </p>
         </div>
 
         {/* Selected files list */}
         {files.length > 0 && (
           <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-            <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-              <span>Selected Documents ({files.length})</span>
+            <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+              <span className="font-semibold">Selected Documents ({files.length})</span>
               <button
                 type="button"
                 onClick={() => setFiles([])}
-                className="text-rose-400 hover:underline"
+                className="text-rose-600 hover:underline"
               >
                 Clear all
               </button>
@@ -168,17 +168,17 @@ export function FileUploadModal({ isOpen, onClose, onUploadSuccess }) {
             {files.map((file, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-sm"
+                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-sm"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="p-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 shrink-0">
+                  <div className="p-2 rounded-lg bg-rose-50 text-rose-600 border border-rose-100 shrink-0">
                     <FileText className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-medium text-slate-200 truncate text-xs sm:text-sm">
+                    <p className="font-semibold text-slate-800 truncate text-xs sm:text-sm">
                       {file.name}
                     </p>
-                    <p className="text-[11px] text-slate-400">{formatBytes(file.size)}</p>
+                    <p className="text-[11px] text-slate-500">{formatBytes(file.size)}</p>
                   </div>
                 </div>
                 {!uploading && (
@@ -188,7 +188,7 @@ export function FileUploadModal({ isOpen, onClose, onUploadSuccess }) {
                       e.stopPropagation();
                       removeFile(idx);
                     }}
-                    className="p-1 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-200/60 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -201,13 +201,13 @@ export function FileUploadModal({ isOpen, onClose, onUploadSuccess }) {
         {/* Upload progress */}
         {uploading && (
           <div className="space-y-1.5 pt-2">
-            <div className="flex justify-between text-xs text-slate-400">
-              <span>Uploading & preparing pipeline...</span>
+            <div className="flex justify-between text-xs text-slate-600 font-medium">
+              <span>Uploading & initiating AI processing pipeline...</span>
               <span>{progress}%</span>
             </div>
-            <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+            <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden border border-slate-200">
               <div
-                className="h-full bg-gradient-to-r from-brand-600 to-indigo-500 transition-all duration-300"
+                className="h-full bg-brand-600 transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -215,7 +215,7 @@ export function FileUploadModal({ isOpen, onClose, onUploadSuccess }) {
         )}
 
         {/* Modal actions */}
-        <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+        <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
           <Button variant="ghost" onClick={handleClose} disabled={uploading}>
             Cancel
           </Button>

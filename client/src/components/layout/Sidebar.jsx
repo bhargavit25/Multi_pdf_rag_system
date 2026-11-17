@@ -3,25 +3,46 @@ import {
   LayoutDashboard,
   FileText,
   MessageSquare,
+  Sparkles,
+  HelpCircle,
+  Layers,
   History,
-  User as UserIcon,
+  Settings,
   LogOut,
-  Plus,
+  Upload,
   BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { NavLink as RouterNavLink, useNavigate as useRouterNavigate } from 'react-router-dom';
 
-export function Sidebar({ mobileOpen, setMobileOpen }) {
+export function Sidebar({ mobileOpen, setMobileOpen, onUploadClick }) {
   const { user, logout } = useAuth();
   const navigate = useRouterNavigate();
 
-  const navItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'Documents', path: '/documents', icon: FileText },
-    { label: 'RAG Chat', path: '/chat', icon: MessageSquare },
-    { label: 'Chat History', path: '/history', icon: History },
-    { label: 'Settings & Profile', path: '/profile', icon: UserIcon },
+  const navSections = [
+    {
+      title: 'WORKSPACE',
+      items: [
+        { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+        { label: 'My Documents', path: '/documents', icon: FileText },
+        { label: 'AI Chat', path: '/chat', icon: MessageSquare },
+      ],
+    },
+    {
+      title: 'AI LEARNING TOOLS',
+      items: [
+        { label: 'Summarization', path: '/summarize', icon: Sparkles },
+        { label: 'Quiz Generator', path: '/quiz', icon: HelpCircle },
+        { label: 'Flashcards', path: '/flashcards', icon: Layers },
+        { label: 'Learning History', path: '/history', icon: History },
+      ],
+    },
+    {
+      title: 'SYSTEM',
+      items: [
+        { label: 'Settings', path: '/settings', icon: Settings },
+      ],
+    },
   ];
 
   const handleLogout = () => {
@@ -30,76 +51,83 @@ export function Sidebar({ mobileOpen, setMobileOpen }) {
   };
 
   const navContent = (
-    <div className="flex flex-col h-full bg-slate-900/90 border-r border-slate-800/80 backdrop-blur-xl w-64 p-4 select-none">
+    <div className="flex flex-col h-full bg-white border-r border-slate-200 w-64 p-4 select-none">
       {/* Brand Logo */}
-      <div className="flex items-center gap-3 px-2 py-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-brand-500/30 text-white font-bold text-lg">
+      <div className="flex items-center gap-3 px-2 py-3 mb-4">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center shadow-md shadow-brand-500/20 text-white font-bold text-lg">
           <BookOpen className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="text-base font-bold text-white tracking-tight flex items-center gap-1.5">
-            PDF<span className="text-brand-400">RAG</span>
-            <span className="text-[10px] uppercase font-semibold bg-brand-500/20 text-brand-300 px-1.5 py-0.5 rounded border border-brand-500/30">
+          <h1 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+            PDF<span className="text-brand-600">RAG</span>
+            <span className="text-[10px] uppercase font-bold bg-brand-50 text-brand-700 px-1.5 py-0.5 rounded border border-brand-200">
               AI
             </span>
           </h1>
-          <p className="text-xs text-slate-400">Multi-Doc Intelligence</p>
+          <p className="text-xs text-slate-500">Study & Research Platform</p>
         </div>
       </div>
 
-      {/* Quick Action: Start New Chat */}
-      <RouterNavLink
-        to="/chat"
-        onClick={() => setMobileOpen && setMobileOpen(false)}
-        className="flex items-center justify-center gap-2 w-full py-2.5 px-4 mb-6 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white text-sm font-semibold shadow-md shadow-brand-600/20 transition-all active:scale-[0.98]"
+      {/* Prominent Upload PDF Button */}
+      <button
+        type="button"
+        onClick={() => {
+          if (setMobileOpen) setMobileOpen(false);
+          if (onUploadClick) onUploadClick();
+        }}
+        className="flex items-center justify-center gap-2 w-full py-2.5 px-4 mb-5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm hover:shadow transition-all active:scale-[0.98]"
       >
-        <Plus className="w-4 h-4" />
-        <span>New Chat</span>
-      </RouterNavLink>
+        <Upload className="w-4 h-4" />
+        <span>Upload PDF</span>
+      </button>
 
-      {/* Navigation Links */}
-      <div className="space-y-1.5 flex-1">
-        <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
-          Menu
-        </p>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <RouterNavLink
-              key={item.path}
-              to={item.path}
-              onClick={() => setMobileOpen && setMobileOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-brand-600/15 text-brand-300 border border-brand-500/30 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`
-              }
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              <span>{item.label}</span>
-            </RouterNavLink>
-          );
-        })}
+      {/* Navigation Sections */}
+      <div className="space-y-4 flex-1 overflow-y-auto pr-1">
+        {navSections.map((sec, idx) => (
+          <div key={idx} className="space-y-1">
+            <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              {sec.title}
+            </p>
+            {sec.items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <RouterNavLink
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setMobileOpen && setMobileOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      isActive
+                        ? 'bg-brand-50 text-brand-700 font-semibold border border-brand-200 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`
+                  }
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span>{item.label}</span>
+                </RouterNavLink>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
-      {/* User info & Logout */}
-      <div className="pt-4 border-t border-slate-800/80">
-        <div className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 border border-slate-800/60 mb-2">
+      {/* User profile & Logout */}
+      <div className="pt-3 border-t border-slate-200">
+        <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/80">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 font-bold flex items-center justify-center text-sm shrink-0 border border-indigo-500/30">
+            <div className="w-8 h-8 rounded-lg bg-brand-100 text-brand-700 font-bold flex items-center justify-center text-sm shrink-0 border border-brand-200">
               {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-white truncate">{user?.name || 'User'}</p>
-              <p className="text-[11px] text-slate-400 truncate">{user?.email || ''}</p>
+              <p className="text-xs font-semibold text-slate-900 truncate">{user?.name || 'User'}</p>
+              <p className="text-[11px] text-slate-500 truncate">{user?.email || ''}</p>
             </div>
           </div>
           <button
             onClick={handleLogout}
             title="Log Out"
-            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
           >
             <LogOut className="w-4 h-4" />
           </button>
@@ -119,7 +147,7 @@ export function Sidebar({ mobileOpen, setMobileOpen }) {
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
           <div
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs"
             onClick={() => setMobileOpen(false)}
           />
           <div className="relative z-10 w-64 max-w-[80vw] h-full animate-slide-up">
